@@ -27,10 +27,13 @@ vector<Process>& System::Processes() {
     vector<int> pids = LinuxParser::Pids(); 
     for (int i = 0; i< pids.size(); i++ ){
         int pid_ = pids[i];
-        
-        processes_.push_back(Process(pid_));
+        Process process(pid_);
+        processes_.push_back(process);
       
     }
+    sort(processes_.begin(),processes_.end(),[]( Process& pa,  Process& pb){ 
+        return (pb<pa);
+    });
     return processes_;
  }
 

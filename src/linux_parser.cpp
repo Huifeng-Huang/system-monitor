@@ -215,21 +215,27 @@ vector<string> LinuxParser::CpuUtilization(int pid) { string line;
   string key;
   string str;
   vector<string> part;
-  string utime,stime,cutime,cstime,starttime;
-  static long StartTime;
+ string utime,stime,cutime,cstime,starttime;
+ 
 
   std::ifstream filestream(kProcDirectory +"/"+ to_string(pid) + kStatFilename);
-  if (filestream.is_open()) {
-
-    for (int i = 0; i<22;i++){
-      filestream >> str;
-      part.push_back(str);
-
+  if (filestream.is_open()) {while (std::getline(filestream, line)) {
+      
+      std::istringstream linestream(line);
+      for (int i =1 ; i<=22;i++){
+        linestream>>str;
+        if (i ==14 || i==15 || i==16|| i==17|| i==22)
+        {long ltime = stol(str)/sysconf(_SC_CLK_TCK);
+         string time = to_string(ltime);
+         part.push_back(time);
+        }
+      }
+     
+      }
+      return part;
     }
-
-  }
-  return part; }
-
+    
+}
 // TODO: Read and return the total number of processes
 int LinuxParser::TotalProcesses() {
   string line;
@@ -299,6 +305,7 @@ string LinuxParser::Ram(int pid) {
   string line;
   string key;
   string value;
+  string ram;
   std::ifstream filestream(kProcDirectory + "/"+to_string (pid) +kStatusFilename);
   if (filestream.is_open()) {
     while (std::getline(filestream, line)) {
@@ -306,14 +313,15 @@ string LinuxParser::Ram(int pid) {
       std::istringstream linestream(line);
       while (linestream >> key >> value) {
         if (key == "VmSize:") {
-          long ram_kb = stoi(value);
-          long ram_mb = 0.001*ram_kb;
-          return to_string(ram_mb); 
+          long conv = std::stol(value)/1000;
+          ram =std::to_string(conv);
+          return ram;
         }
        
       }
     }
   } 
+  return ram;
   }
 
 // TODO: Read and return the user ID associated with a process
@@ -349,14 +357,15 @@ string LinuxParser::User(int pid) {
   string key;
   string connection = ":x:";
   
-
+  string uid = Uid(pid);
   std::ifstream filestream(kPasswordPath);
   if (filestream.is_open()) {
     while (std::getline(filestream, line)) {
+      std::replace(line.begin(), line.end(), ':', ' ');
       
       std::istringstream linestream(line);
       while (linestream >> user>>connection>>key) {
-        if (key == "1000") {
+        if (key == uid) {
          
          
           return user; 
@@ -375,17 +384,22 @@ long LinuxParser::UpTime(int pid) { string line;
   string str;
   vector<string> part;
   string utime,stime,cutime,cstime,starttime;
-  static long StartTime;
+   long StartTime =0;
 
   std::ifstream filestream(kProcDirectory +"/"+ to_string(pid) + kStatFilename);
-  if (filestream.is_open()) {
-
-    for (int i = 0; i<22;i++){
-      filestream >> str;
-      part.push_back(str);
-
+  if (filestream.is_open()) {while (std::getline(filestream, line)) {
+      
+      std::istringstream linestream(line);
+      for (int i =1 ; i<=22;i++){
+        linestream>>str;
+        if (i ==22)
+        {StartTime = stol(str);
+        StartTime /=sysconf(_SC_CLK_TCK);
+        return StartTime;
+        }
+      }
+       
+      }
     }
-    starttime= part[22];
-    StartTime = stol(starttime);
+    return StartTime;
   }
-  return StartTime/sysconf(_SC_CLK_TCK); }
